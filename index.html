@@ -1,0 +1,110 @@
+from pathlib import Path
+
+html = r'''<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101827">
+<title>Orçamento Inteligente</title>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--ink:#172033;--muted:#68758b;--line:#e4e9f1;--primary:#2457e6;--dark:#101827;--green:#0c9465;--red:#c43d4d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:linear-gradient(120deg,#101827,#1d3260);color:white;padding:25px 18px 30px}
+.wrap{max-width:980px;margin:auto}header .top{display:flex;align-items:center;gap:12px}.logo{width:45px;height:45px;border-radius:13px;background:#ffffff1c;display:grid;place-items:center;font-size:23px}h1{font-size:22px;margin:0}header p{margin:4px 0 0;color:#c8d4ed;font-size:13px}
+main{max-width:980px;margin:-13px auto 35px;padding:0 14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 5px 20px #1d31500a}
+h2{font-size:16px;margin:0 0 14px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}label{font-size:12px;font-weight:650;color:#526078}input,textarea,select{width:100%;border:1px solid #d8dfeb;border-radius:9px;padding:11px 12px;font:inherit;color:var(--ink);background:#fff;min-width:0}textarea{resize:vertical;min-height:75px}input:focus,textarea:focus{outline:2px solid #2457e633;border-color:var(--primary)}
+.item{display:grid;grid-template-columns:minmax(0,2fr) 85px 120px 38px;gap:8px;align-items:end;margin-bottom:9px}.item label{display:block;margin-bottom:5px}.remove{height:41px;border:0;border-radius:9px;background:#fff0f1;color:var(--red);font-size:19px;cursor:pointer}
+button{border:0;border-radius:10px;padding:11px 14px;font:600 14px inherit;cursor:pointer}.primary{background:var(--primary);color:white}.secondary{background:#edf2ff;color:#214cc6}.darkbtn{background:var(--dark);color:white}.actions{display:flex;flex-wrap:wrap;gap:9px}.totals{display:grid;gap:8px;margin-left:auto;max-width:320px}.totalrow{display:flex;justify-content:space-between;color:var(--muted)}.grand{border-top:1px solid var(--line);padding-top:10px;color:var(--ink);font-size:19px;font-weight:800}.hint{color:var(--muted);font-size:12px;margin:8px 0 0}.airesult{background:#f1f6ff;border:1px solid #dce8ff;padding:12px;border-radius:10px;margin-top:10px;display:none}.status{font-size:12px;color:var(--green);min-height:18px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:8px 16px 25px}
+@media(max-width:620px){.grid{grid-template-columns:1fr}.field.full{grid-column:auto}.item{grid-template-columns:minmax(0,1fr) 72px 100px 34px;gap:5px}.panel{padding:14px}.actions button{flex:1 1 45%}}
+@media print{body{background:white}header{background:white;color:#111;padding:0 0 15px}header p{color:#555}main{margin:0;padding:0;max-width:none}.panel{box-shadow:none;border:0;border-bottom:1px solid #ddd;padding:12px 0;margin:0;border-radius:0}.no-print,button,.hint{display:none!important}input,textarea{border:0;padding:2px 0;background:transparent}footer{display:none}.item{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div class="top"><div class="logo">🧾</div><div><h1>Orçamento Inteligente</h1><p>Crie, calcule e compartilhe seus orçamentos.</p></div></div></div></header>
+<main>
+<section class="panel">
+<h2>1. Dados do orçamento</h2>
+<div class="grid">
+<div class="field"><label for="number">Número</label><input id="number" readonly></div>
+<div class="field"><label for="date">Data</label><input id="date" type="date"></div>
+<div class="field"><label for="company">Nome da empresa / profissional</label><input id="company" placeholder="Nome da sua empresa"></div>
+<div class="field"><label for="phone">Telefone / WhatsApp</label><input id="phone" placeholder="(00) 00000-0000"></div>
+</div></section>
+<section class="panel">
+<h2>2. Dados do cliente</h2>
+<div class="grid">
+<div class="field"><label for="client">Nome do cliente</label><input id="client" placeholder="Nome completo"></div>
+<div class="field"><label for="clientPhone">Telefone do cliente</label><input id="clientPhone" placeholder="(00) 00000-0000"></div>
+<div class="field full"><label for="description">Descrição / serviço solicitado</label><textarea id="description" placeholder="Descreva o que o cliente precisa..."></textarea></div>
+</div></section>
+<section class="panel">
+<h2>3. Produtos e serviços</h2>
+<div id="items"></div>
+<div class="actions no-print"><button class="secondary" id="add">＋ Adicionar item</button></div>
+<p class="hint">Informe a quantidade e o preço unitário. O total é calculado automaticamente.</p>
+</section>
+<section class="panel">
+<h2>4. Resumo</h2>
+<div class="grid">
+<div class="field"><label for="discount">Desconto (R$)</label><input id="discount" type="number" min="0" step="0.01" value="0"></div>
+<div class="field"><label for="validity">Validade do orçamento</label><input id="validity" placeholder="Ex.: 7 dias"></div>
+<div class="field full"><label for="notes">Observações e condições</label><textarea id="notes" placeholder="Prazo, forma de pagamento, garantia etc."></textarea></div>
+</div>
+<div class="totals" style="margin-top:16px"><div class="totalrow"><span>Subtotal</span><strong id="subtotal">R$ 0,00</strong></div><div class="totalrow"><span>Desconto</span><strong id="discountView">R$ 0,00</strong></div><div class="totalrow grand"><span>Total</span><strong id="total">R$ 0,00</strong></div></div>
+</section>
+<section class="panel no-print">
+<h2>5. Assistente inteligente</h2>
+<p class="hint" style="margin-top:-7px">Ajuda a transformar suas anotações em uma descrição mais clara. Funciona sem chave de API; não é uma IA generativa conectada à internet.</p>
+<div class="field"><label for="raw">O que você quer explicar melhor?</label><textarea id="raw" placeholder="Ex.: trocar óleo e filtro, verificar barulho na suspensão..."></textarea></div>
+<div class="actions" style="margin-top:10px"><button class="secondary" id="assist">✨ Melhorar descrição</button><button class="secondary" id="copyDesc">Usar no serviço</button></div>
+<div class="airesult" id="airesult"></div>
+</section>
+<section class="panel no-print">
+<h2>6. Finalizar</h2>
+<div class="actions">
+<button class="primary" id="print">Imprimir / salvar PDF</button>
+<button class="secondary" id="whatsapp">Enviar pelo WhatsApp</button>
+<button class="darkbtn" id="save">Salvar neste aparelho</button>
+<button class="secondary" id="load">Carregar salvo</button>
+<button class="secondary" id="clear">Novo orçamento</button>
+</div><p class="status" id="status" aria-live="polite"></p>
+<p class="hint">Os dados ficam neste navegador quando você usa “Salvar neste aparelho”. Para PDF, escolha “Salvar como PDF” na tela de impressão.</p>
+</section>
+</main>
+<footer>Orçamento Inteligente • Ferramenta de apoio para criação de orçamentos</footer>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const today=new Date(); $('date').value=new Date(today.getTime()-today.getTimezoneOffset()*60000).toISOString().slice(0,10);
+$('number').value='ORC-'+today.getFullYear()+'-'+String(Math.floor(Math.random()*9000)+1000);
+function addItem(name='',qty=1,price=''){
+ const row=document.createElement('div');row.className='item';
+ row.innerHTML=`<div><label>Produto / serviço</label><input class="iname" placeholder="Ex.: Mão de obra" value=""></div><div><label>Qtd.</label><input class="qty" type="number" min="0" step="0.01" value="1"></div><div><label>Preço unit. (R$)</label><input class="price" type="number" min="0" step="0.01" placeholder="0,00"></div><button class="remove no-print" title="Remover item" aria-label="Remover item">×</button>`;
+ row.querySelector('.iname').value=name;row.querySelector('.qty').value=qty;row.querySelector('.price').value=price;
+ row.querySelectorAll('input').forEach(el=>el.addEventListener('input',calculate));
+ row.querySelector('.remove').addEventListener('click',()=>{row.remove();calculate()});
+ $('items').appendChild(row);calculate();
+}
+function calculate(){
+ let sub=0;document.querySelectorAll('.item').forEach(r=>sub+=(Number(r.querySelector('.qty').value)||0)*(Number(r.querySelector('.price').value)||0));
+ const d=Math.max(0,Number($('discount').value)||0),total=Math.max(0,sub-d);
+ $('subtotal').textContent=money(sub);$('discountView').textContent=money(d);$('total').textContent=money(total);
+}
+$('add').onclick=()=>addItem();$('discount').oninput=calculate;addItem();
+function data(){return {number:$('number').value,date:$('date').value,company:$('company').value,phone:$('phone').value,client:$('client').value,clientPhone:$('clientPhone').value,description:$('description').value,items:[...document.querySelectorAll('.item')].map(r=>({name:r.querySelector('.iname').value,qty:r.querySelector('.qty').value,price:r.querySelector('.price').value})),discount:$('discount').value,validity:$('validity').value,notes:$('notes').value}}
+function fill(d){['number','date','company','phone','client','clientPhone','description','discount','validity','notes'].forEach(k=>{if(d[k]!==undefined)$(k).value=d[k]});$('items').innerHTML='';(d.items||[]).forEach(x=>addItem(x.name,x.qty,x.price));if(!d.items?.length)addItem();calculate()}
+$('print').onclick=()=>window.print();
+function summary(){const d=data();let sub=d.items.reduce((s,x)=>s+(Number(x.qty)||0)*(Number(x.price)||0),0),total=Math.max(0,sub-(Number(d.discount)||0));return `*${d.company||'Orçamento Inteligente'}*\nOrçamento ${d.number}\nData: ${d.date}\nCliente: ${d.client||'-'}\n${d.clientPhone?'Telefone: '+d.clientPhone+'\n':''}\n*Descrição:* ${d.description||'-'}\n\n*Itens:*\n${d.items.map(x=>`• ${x.name||'Item'} — ${x.qty} x ${money(x.price)} = ${money((Number(x.qty)||0)*(Number(x.price)||0))}`).join('\n')}\n\nSubtotal: ${money(sub)}\nDesconto: ${money(d.discount)}\n*TOTAL: ${money(total)}*\nValidade: ${d.validity||'A combinar'}\n${d.notes?'Observações: '+d.notes+'\n':''}${d.phone?'Contato: '+d.phone:''}`}
+$('whatsapp').onclick=()=>{const text=encodeURIComponent(summary());window.open('https://wa.me/?text='+text,'_blank')};
+$('save').onclick=()=>{localStorage.setItem('orcamento-inteligente',JSON.stringify(data()));$('status').textContent='Orçamento salvo neste aparelho.'};
+$('load').onclick=()=>{let d=localStorage.getItem('orcamento-inteligente');if(!d){$('status').textContent='Nenhum orçamento salvo neste navegador.';return}fill(JSON.parse(d));$('status').textContent='Orçamento carregado.'};
+$('clear').onclick=()=>{if(!confirm('Começar um novo orçamento? Os dados atuais serão apagados da tela.'))return;document.querySelectorAll('main input:not([readonly]),main textarea').forEach(x=>x.value='');$('number').value='ORC-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*9000)+1000);$('items').innerHTML='';addItem();$('status').textContent='Novo orçamento pronto.'};
+$('assist').onclick=()=>{let t=$('raw').value.trim();if(!t){$('airesult').style.display='block';$('airesult').textContent='Digite primeiro algumas informações sobre o serviço.';return}let clean=t.replace(/\s+/g,' ').replace(/(^\w)/,c=>c.toUpperCase()).replace(/[.!?]*$/,'');let result='Serviço solicitado: '+clean+'. Recomenda-se confirmar as condições do veículo/produto e os itens necessários antes da execução. Valores e prazo sujeitos à aprovação do cliente.';$('airesult').style.display='block';$('airesult').textContent=result};
+$('copyDesc').onclick=()=>{let t=$('airesult').textContent;if(!t){$('status').textContent='Gere uma descrição primeiro.';return}$('description').value=t;$('status').textContent='Descrição adicionada ao orçamento.'};
+</script>
+</body></html>'''
+path = Path("/mnt/data/orcamento_inteligente.html")
+path.write_text(html, encoding="utf-8")
+print(f"Arquivo criado: {path} ({path.stat().st_size} bytes)")
